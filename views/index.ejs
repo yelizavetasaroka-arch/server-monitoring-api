@@ -1,0 +1,28 @@
+<%- include('partials/header') %>
+
+<h1><%= title %></h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Идентификатор сервера</th>
+      <th>CPU (%)</th>
+      <th>RAM (%)</th>
+      <th>Действие</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% metrics.forEach(m => { %>
+      <tr>
+        <td><%= m.id %></td>
+        <td><%= m.serverId %></td>
+        <td><%= m.cpuUsagePercent %></td>
+        <td><%= m.ramUsagePercent %></td>
+        <td><a href="/item/<%= m.id %>" class="btn" style="padding: 4px 8px; font-size: 12px;">Подробнее</a></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<%- include('partials/footer') %>

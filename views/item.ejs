@@ -1,0 +1,17 @@
+<%- include('partials/header') %>
+
+<h1><%= title %></h1>
+
+<div class="card">
+  <p><strong>ID записи:</strong> <%= metric.id %></p>
+  <p><strong>Сервер:</strong> <%= metric.serverId %></p>
+  <p><strong>Нагрузка CPU:</strong> <%= metric.cpuUsagePercent %>%</p>
+  <p><strong>Использование RAM:</strong> <%= metric.ramUsagePercent %>%</p>
+  <p><strong>Занято на диске:</strong> <%= metric.diskUsagePercent %>%</p>
+  <p><strong>Сетевой трафик:</strong> <%= metric.networkTrafficKbps %> Kbps</p>
+  <p><strong>Метка времени:</strong> <%= metric.timestamp %></p>
+  <br>
+  <a href="/" class="btn" style="background: #6c757d;">Назад к списку</a>
+</div>
+
+<%- include('partials/footer') %>

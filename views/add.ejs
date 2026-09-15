@@ -1,0 +1,29 @@
+<%- include('partials/header') %>
+
+<h1><%= title %></h1>
+
+<form action="/add" method="POST" class="card">
+  <div>
+    <label>ID Сервера:</label>
+    <input type="text" name="serverId" required placeholder="srv-node-03">
+  </div>
+  <div>
+    <label>CPU (%):</label>
+    <input type="number" step="0.1" name="cpuUsagePercent" required placeholder="45.5">
+  </div>
+  <div>
+    <label>RAM (%):</label>
+    <input type="number" step="0.1" name="ramUsagePercent" required placeholder="60.0">
+  </div>
+  <div>
+    <label>Диск (%):</label>
+    <input type="number" step="0.1" name="diskUsagePercent" required placeholder="30.0">
+  </div>
+  <div>
+    <label>Трафик (Kbps):</label>
+    <input type="number" name="networkTrafficKbps" placeholder="1000">
+  </div>
+  <button type="submit" class="btn">Сохранить метрику</button>
+</form>
+
+<%- include('partials/footer') %>
