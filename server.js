@@ -10,9 +10,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// 1. МАРШРУТЫ АУТЕНТИФИКАЦИИ И АВТОРИЗАЦИИ
-
-// Регистрация нового пользователя (POST /auth/register)
 app.post("/auth/register", async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
@@ -54,7 +51,6 @@ app.post("/auth/register", async (req, res, next) => {
   }
 });
 
-// Вход пользователя (POST /auth/login)
 app.post("/auth/login", async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -129,10 +125,6 @@ app.get("/auth/profile", authenticateToken, async (req, res, next) => {
   }
 });
 
-// ==========================================
-// 2. МАРШРУТЫ МЕТРИК СЕРВЕРОВ
-// ==========================================
-
 // GET /metrics — Доступно любым авторизованным пользователям
 app.get("/metrics", authenticateToken, async (req, res, next) => {
   try {
@@ -147,7 +139,6 @@ app.get("/metrics", authenticateToken, async (req, res, next) => {
   }
 });
 
-// GET /metrics/:id — Доступно любым авторизованным пользователям
 app.get("/metrics/:id", authenticateToken, async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -169,7 +160,6 @@ app.get("/metrics/:id", authenticateToken, async (req, res, next) => {
   }
 });
 
-// POST /metrics — Доступно ТОЛЬКО администраторам
 app.post(
   "/metrics",
   authenticateToken,
@@ -251,7 +241,6 @@ app.put(
   },
 );
 
-// DELETE /metrics/:id — Доступно ТОЛЬКО администраторам
 app.delete(
   "/metrics/:id",
   authenticateToken,
@@ -283,7 +272,6 @@ app.delete(
   },
 );
 
-// Обработка 404
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -291,7 +279,6 @@ app.use((req, res) => {
   });
 });
 
-// Обработка ошибок (500)
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({

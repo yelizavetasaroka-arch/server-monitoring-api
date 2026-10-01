@@ -2,31 +2,27 @@
 @userToken = {{loginUser.response.body.token}}
 @adminToken = {{loginAdmin.response.body.token}}
 
-### 1. Регистрация обычного пользователя (user)
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "user1@example.com",
+  "email": "user3@example.com",
   "password": "UserPass123!",
   "role": "user"
 }
 
 ###
 
-### 2. Регистрация администратора (admin)
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "admin@example.com",
+  "email": "admin1@example.com",
   "password": "AdminPass123!",
   "role": "admin"
 }
 
-###
 
-### 3. Вход обычного пользователя (получение токена)
 # @name loginUser
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -38,7 +34,6 @@ Content-Type: application/json
 
 ###
 
-### 4. Вход администратора (получение токена)
 # @name loginAdmin
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -50,36 +45,32 @@ Content-Type: application/json
 
 ###
 
-### 5. Получение профиля текущего пользователя (GET /auth/profile)
 GET {{baseUrl}}/auth/profile
 Authorization: Bearer {{userToken}}
 
 ###
 
-### 6. GET /metrics - Попытка без токена (Ожидается 401 Unauthorized)
 GET {{baseUrl}}/metrics
 
 ###
 
-### 7. GET /metrics - Список метрик с токеном пользователя (Ожидается 200 OK)
+
 GET {{baseUrl}}/metrics
 Authorization: Bearer {{userToken}}
 
 ###
 
-### 8. GET /metrics/1 - Получение метрики по ID
 GET {{baseUrl}}/metrics/1
 Authorization: Bearer {{userToken}}
 
 ###
 
-### 9. GET /metrics/999 - Ошибка 404 (Метрика не найдена)
 GET {{baseUrl}}/metrics/999
 Authorization: Bearer {{userToken}}
 
 ###
 
-### 10. POST /metrics - Попытка создания обычным пользователем (Ожидается 403 Forbidden)
+
 POST {{baseUrl}}/metrics
 Authorization: Bearer {{userToken}}
 Content-Type: application/json
@@ -94,7 +85,6 @@ Content-Type: application/json
 
 ###
 
-### 11. POST /metrics - Создание новой метрики Администратором (Ожидается 201 Created)
 POST {{baseUrl}}/metrics
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -109,7 +99,6 @@ Content-Type: application/json
 
 ###
 
-### 12. POST /metrics - Ошибка 400 (Некорректные данные)
 POST {{baseUrl}}/metrics
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -119,8 +108,6 @@ Content-Type: application/json
 }
 
 ###
-
-### 13. PUT /metrics/1 - Обновление метрики Администратором
 PUT {{baseUrl}}/metrics/1
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -135,12 +122,10 @@ Content-Type: application/json
 
 ###
 
-### 14. DELETE /metrics/1 - Попытка удаления обычным пользователем (Ожидается 403 Forbidden)
 DELETE {{baseUrl}}/metrics/1
 Authorization: Bearer {{userToken}}
 
 ###
 
-### 15. DELETE /metrics/1 - Успешное удаление метрики Администратором (Ожидается 200 OK)
 DELETE {{baseUrl}}/metrics/1
 Authorization: Bearer {{adminToken}}
