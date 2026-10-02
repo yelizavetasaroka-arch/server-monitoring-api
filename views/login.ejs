@@ -1,11 +1,30 @@
 <%- include('partials/header') %>
 
-<div class="card">
-  <h1>Имитация входа в систему</h1>
-  <p>Для выполнения защищенных действий требуется авторизация.</p>
-  <p>Нажмите на кнопку ниже, чтобы имитировать вход через присвоение query-параметра <code>?auth=1</code>.</p>
-  <br>
-  <a href="/?auth=1" class="btn">Войти как Администратор (?auth=1)</a>
+<div class="card" style="max-width: 450px; margin: 40px auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <h2>Вход в систему</h2>
+  <p>Введите учетные данные для доступа к веб-панели:</p>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 16px;">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <form action="/login" method="POST" style="display: flex; flex-direction: column; gap: 16px; margin-top: 20px;">
+    <div>
+      <label for="email" style="display: block; font-weight: bold; margin-bottom: 6px;">Email:</label>
+      <input type="email" name="email" id="email" required placeholder="admin@example.com" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
+    </div>
+
+    <div>
+      <label for="password" style="display: block; font-weight: bold; margin-bottom: 6px;">Пароль:</label>
+      <input type="password" name="password" id="password" required placeholder="••••••••" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
+    </div>
+
+    <button type="submit" class="btn" style="padding: 10px; background-color: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">
+      Войти в систему
+    </button>
+  </form>
 </div>
 
 <%- include('partials/footer') %>
