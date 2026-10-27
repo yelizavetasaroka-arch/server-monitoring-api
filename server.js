@@ -83,12 +83,23 @@ app.get("/login", (req, res) => {
 
 app.post("/login", async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    email = email ? email.trim() : "";
+    password = password ? password.trim() : "";
 
     if (!email || !password) {
       return res.status(400).render("login", {
         title: "Авторизация в системе",
         error: "Пожалуйста, заполните все поля",
+      });
+    }
+
+    // 3. Проверка на ограничение в 50 символов
+    if (email.length > 50 || password.length > 50) {
+      return res.status(400).render("login", {
+        title: "Авторизация в системе",
+        error: "Длина email и пароля не должна превышать 50 символов",
       });
     }
 
@@ -147,12 +158,84 @@ app.post("/add", requireWebAdmin, async (req, res, next) => {
       networkTrafficKbps,
     } = req.body;
 
+    const trimmedServerId = serverId ? serverId.trim() : "";
+
+    // Функция для безопасного парсинга чисел (замена запятой на точку)
+    const parseNumber = (val) => {
+      if (!val) return NaN;
+      return parseFloat(val.toString().replace(",", "."));
+    };
+
+    const cpu = parseNumber(cpuUsagePercent);
+    const ram = parseNumber(ramUsagePercent);
+    const disk = parseNumber(diskUsagePercent);
+
+    // Обработка трафика с проверкой на максимум 2 знака после запятой
+    const rawTraffic = networkTrafficKbps
+      ? networkTrafficKbps.toString().trim()
+      : "";
+
+    // Регулярное выражение проверяет число с точкой/запятой, у которого после разделителя ровно от 1 до 2 знаков (либо целое число)
+    const trafficRegex = /^\d+([.,]\d{1,2})?$/;
+
+    if (rawTraffic !== "" && !trafficRegex.test(rawTraffic)) {
+      return res.status(400).render("add", {
+        title: "Добавление метрики",
+        error:
+          "Значение сетевого трафика может содержать не более двух знаков после запятой.",
+      });
+    }
+
+    const traffic =
+      rawTraffic !== "" ? parseFloat(rawTraffic.replace(",", ".")) : 0;
+
+    // 1. Проверка обязательных полей (ID может содержать буквы и цифры)
+    if (!trimmedServerId || isNaN(cpu) || isNaN(ram) || isNaN(disk)) {
+      return res.status(400).render("add", {
+        title: "Добавление метрики",
+        error:
+          "Заполните все обязательные поля. Идентификатор сервера может содержать буквы и цифры, а показатели нагрузки должны быть числовыми.",
+      });
+    }
+
+    if (trimmedServerId.length > 50) {
+      return res.status(400).render("add", {
+        title: "Добавление метрики",
+        error: "ID сервера не должен превышать 50 символов",
+      });
+    }
+
+    // 2. Валидация процентов (от 0 до 100)
+    if (
+      cpu < 0 ||
+      cpu > 100 ||
+      ram < 0 ||
+      ram > 100 ||
+      disk < 0 ||
+      disk > 100
+    ) {
+      return res.status(400).render("add", {
+        title: "Добавление метрики",
+        error:
+          "Показатели CPU, RAM и Диска должны быть в пределах от 0% до 100%",
+      });
+    }
+
+    // 3. Валидация диапазона трафика
+    if (traffic < 0 || traffic > 10000000 || isNaN(traffic)) {
+      return res.status(400).render("add", {
+        title: "Добавление метрики",
+        error:
+          "Значение сетевого трафика должно быть в диапазоне от 0 до 10 000 000 Kbps",
+      });
+    }
+
     await ServerMetric.create({
-      serverId: serverId || "srv-node-01",
-      cpuUsagePercent: parseFloat(cpuUsagePercent) || 0,
-      ramUsagePercent: parseFloat(ramUsagePercent) || 0,
-      diskUsagePercent: parseFloat(diskUsagePercent) || 0,
-      networkTrafficKbps: parseInt(networkTrafficKbps, 10) || 0,
+      serverId: trimmedServerId,
+      cpuUsagePercent: cpu,
+      ramUsagePercent: ram,
+      diskUsagePercent: disk,
+      networkTrafficKbps: traffic,
     });
 
     res.redirect("/");
@@ -443,7 +526,7 @@ app.delete(
 );
 
 app.get("/cause-error", (req, res, next) => {
-  next(new Error("Тестовая системная ошибка приложения"));
+  next(new Error("Системная ошибка приложения")); //тестовое
 });
 
 app.use(notFoundHandler);

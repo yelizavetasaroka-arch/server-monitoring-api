@@ -1,17 +1,55 @@
 <%- include('partials/header') %>
 
-<h1><%= title %></h1>
+<% 
+  const cpuClass = metric.cpuUsagePercent > 80 ? 'metric-val danger' : 'metric-val';
+  const ramClass = metric.ramUsagePercent > 80 ? 'metric-val danger' : 'metric-val';
+  const diskClass = metric.diskUsagePercent > 80 ? 'metric-val danger' : 'metric-val';
+%>
 
-<div class="card">
-  <p><strong>ID записи:</strong> <%= metric.id %></p>
-  <p><strong>Сервер:</strong> <%= metric.serverId %></p>
-  <p><strong>Нагрузка CPU:</strong> <%= metric.cpuUsagePercent %>%</p>
-  <p><strong>Использование RAM:</strong> <%= metric.ramUsagePercent %>%</p>
-  <p><strong>Занято на диске:</strong> <%= metric.diskUsagePercent %>%</p>
-  <p><strong>Сетевой трафик:</strong> <%= metric.networkTrafficKbps %> Kbps</p>
-  <p><strong>Метка времени:</strong> <%= metric.timestamp %></p>
-  <br>
-  <a href="/" class="btn" style="background: #6c757d;">Назад к списку</a>
+<div class="card-center">
+  <div class="page-header">
+    <h1 class="page-title"><%= title %></h1>
+    <a href="/" class="btn btn-secondary">&larr; Назад к списку</a>
+  </div>
+
+  <div class="card">
+    <div class="grid-2">
+      <div class="info-box">
+        <span class="metric-label">ID записи</span>
+        <strong>#<%= metric.id %></strong>
+      </div>
+      <div class="info-box">
+        <span class="metric-label">Сервер</span>
+        <strong style="color: var(--primary-color);"><%= metric.serverId %></strong>
+      </div>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 16px 0;">
+
+    <div class="grid-3">
+      <div class="metric-box">
+        <span class="metric-label">CPU</span>
+        <span class="<%= cpuClass %>"><%= metric.cpuUsagePercent %>%</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">RAM</span>
+        <span class="<%= ramClass %>"><%= metric.ramUsagePercent %>%</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Диск</span>
+        <span class="<%= diskClass %>"><%= metric.diskUsagePercent %>%</span>
+      </div>
+    </div>
+
+    <div class="traffic-row">
+      <span style="color: var(--text-secondary); font-size: 14px;">Сетевой трафик:</span>
+      <strong><%= metric.networkTrafficKbps || 0 %> Kbps</strong>
+    </div>
+
+    <div class="timestamp">
+      Метка времени: <%= metric.timestamp %>
+    </div>
+  </div>
 </div>
 
 <%- include('partials/footer') %>
