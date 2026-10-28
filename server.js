@@ -4,6 +4,7 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { Op } = require("sequelize");
 
 const { ServerMetric, User } = require("./models");
 
@@ -14,6 +15,16 @@ const requestLogger = require("./middleware/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/errors");
 
 const app = express();
+const cors = require("cors");
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Порт, на котором у вас запущен React/Vite
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 const PORT = process.env.PORT || 3000;
 
 app.set("view engine", "ejs");
@@ -382,7 +393,19 @@ app.get("/auth/profile", authenticateToken, async (req, res, next) => {
 
 app.get("/metrics", authenticateToken, async (req, res, next) => {
   try {
-    const metrics = await ServerMetric.findAll();
+    const { search } = req.query;
+    let condition = {};
+
+    if (search) {
+      condition = {
+        serverId: {
+          [Op.like]: `%${search}%`,
+        },
+      };
+    }
+
+    const metrics = await ServerMetric.findAll({ where: condition });
+
     res.status(200).json({
       success: true,
       count: metrics.length,
