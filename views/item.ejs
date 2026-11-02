@@ -8,19 +8,25 @@
 
 <div class="card-center">
   <div class="page-header">
-    <h1 class="page-title"><%= title %></h1>
-    <a href="/" class="btn btn-secondary">&larr; Назад к списку</a>
+    <h1 class="page-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;" title="<%= title %>">
+      <%= title %>
+    </h1>
+    <a href="/" class="btn btn-secondary" style="flex-shrink: 0;">&larr; Назад к списку</a>
   </div>
 
   <div class="card">
     <div class="grid-2">
-      <div class="info-box">
+      <div class="info-box" style="min-width: 0;">
         <span class="metric-label">ID записи</span>
         <strong>#<%= metric.id %></strong>
       </div>
-      <div class="info-box">
+      <div class="info-box" style="min-width: 0;">
         <span class="metric-label">Сервер</span>
-        <strong style="color: var(--primary-color);"><%= metric.serverId %></strong>
+        <strong 
+          style="color: var(--primary-color); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;" 
+          title="<%= metric.serverId %>">
+          <%= metric.serverId %>
+        </strong>
       </div>
     </div>
 
@@ -29,15 +35,15 @@
     <div class="grid-3">
       <div class="metric-box">
         <span class="metric-label">CPU</span>
-        <span class="<%= cpuClass %>"><%= metric.cpuUsagePercent %>%</span>
+        <span class="<%= cpuClass %>"><%= metric.cpuUsagePercent || 0 %>%</span>
       </div>
       <div class="metric-box">
         <span class="metric-label">RAM</span>
-        <span class="<%= ramClass %>"><%= metric.ramUsagePercent %>%</span>
+        <span class="<%= ramClass %>"><%= metric.ramUsagePercent || 0 %>%</span>
       </div>
       <div class="metric-box">
         <span class="metric-label">Диск</span>
-        <span class="<%= diskClass %>"><%= metric.diskUsagePercent %>%</span>
+        <span class="<%= diskClass %>"><%= metric.diskUsagePercent || 0 %>%</span>
       </div>
     </div>
 
@@ -47,7 +53,7 @@
     </div>
 
     <div class="timestamp">
-      Метка времени: <%= metric.timestamp %>
+      Метка времени: <%= new Date(metric.timestamp).toLocaleString('ru-RU') %>
     </div>
   </div>
 </div>

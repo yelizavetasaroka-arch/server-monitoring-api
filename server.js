@@ -8,10 +8,10 @@ const { Op } = require("sequelize");
 
 const { ServerMetric, User } = require("./models");
 
-// (JWT)
 const { authenticateToken, requireAdmin } = require("./middleware/auth");
 
-const requestLogger = require("./middleware/logger");
+// ИМПОРТИРУЕМ ГЕТТЕР ИЗ НОВОГО ЛОГГЕРА
+const { requestLogger, isLogFileUnavailable } = require("./middleware/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/errors");
 
 const app = express();
@@ -19,7 +19,7 @@ const cors = require("cors");
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // Порт, на котором у вас запущен React/Vite
+    origin: "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -31,18 +31,15 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
 
-// Подключение встроенных и глобальных middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(requestLogger);
 
-// Сохранение состояния авторизации для EJS-шаблонов
 app.use((req, res, next) => {
   let role = req.cookies.user_role;
   let email = req.cookies.user_email;
 
-  // Резервный доступ через query-параметр ?auth=1
   if (req.query.auth === "1") {
     role = "admin";
   }
@@ -68,10 +65,36 @@ const requireWebAdmin = (req, res, next) => {
 };
 
 // ==========================================
+// БЛОКИРОВКА ДОБАВЛЕНИЯ ПРИ ОТКАЗЕ ЛОГГЕРА
+// ==========================================
+const blockIfLogsDown = (req, res, next) => {
+  if (isLogFileUnavailable()) {
+    const message =
+      "Добавление метрик временно заблокировано: критическая ошибка системы аудита.";
+
+    // Если это API (AJAX) или клиент ждёт JSON
+    if (
+      req.xhr ||
+      req.path.startsWith("/api") ||
+      req.headers.accept?.includes("json")
+    ) {
+      return res.status(503).json({ success: false, message });
+    }
+
+    // Если обычная форма — рендерим страницу ошибки
+    return res.status(503).render("500", {
+      title: "Ошибка сервера",
+      error: message,
+      user: res.locals.user || null,
+    });
+  }
+  next();
+};
+
+// ==========================================
 // SSR МАРШРУТЫ (EJS Страницы)
 // ==========================================
 
-// Главная страница — просмотр метрик (с перенаправлением незарегистрированных)
 app.get("/", async (req, res, next) => {
   try {
     if (res.locals.user.role === "guest") {
@@ -106,7 +129,6 @@ app.post("/login", async (req, res, next) => {
       });
     }
 
-    // 3. Проверка на ограничение в 50 символов
     if (email.length > 50 || password.length > 50) {
       return res.status(400).render("login", {
         title: "Авторизация в системе",
@@ -114,7 +136,6 @@ app.post("/login", async (req, res, next) => {
       });
     }
 
-    // Находим пользователя в БД
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).render("login", {
@@ -123,7 +144,6 @@ app.post("/login", async (req, res, next) => {
       });
     }
 
-    // Сверяем хэш пароля через bcrypt
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return res.status(401).render("login", {
@@ -132,10 +152,9 @@ app.post("/login", async (req, res, next) => {
       });
     }
 
-    // Записываем роль и email в cookies
     res.cookie("user_role", user.role, {
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 часа
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     res.cookie("user_email", user.email, {
@@ -155,11 +174,13 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-app.get("/add", requireWebAdmin, (req, res) => {
+// ДОБАВЛЕНА ПРОВЕРКА ЛОГГЕРА ДЛЯ СТРАНИЦЫ ДОБАВЛЕНИЯ
+app.get("/add", requireWebAdmin, blockIfLogsDown, (req, res) => {
   res.render("add", { title: "Добавить метрику сервера" });
 });
 
-app.post("/add", requireWebAdmin, async (req, res, next) => {
+// ДОБАВЛЕНА ПРОВЕРКА ЛОГГЕРА ДЛЯ ПОСТ-ЗАПРОСА
+app.post("/add", requireWebAdmin, blockIfLogsDown, async (req, res, next) => {
   try {
     const {
       serverId,
@@ -171,7 +192,6 @@ app.post("/add", requireWebAdmin, async (req, res, next) => {
 
     const trimmedServerId = serverId ? serverId.trim() : "";
 
-    // Функция для безопасного парсинга чисел (замена запятой на точку)
     const parseNumber = (val) => {
       if (!val) return NaN;
       return parseFloat(val.toString().replace(",", "."));
@@ -181,12 +201,10 @@ app.post("/add", requireWebAdmin, async (req, res, next) => {
     const ram = parseNumber(ramUsagePercent);
     const disk = parseNumber(diskUsagePercent);
 
-    // Обработка трафика с проверкой на максимум 2 знака после запятой
     const rawTraffic = networkTrafficKbps
       ? networkTrafficKbps.toString().trim()
       : "";
 
-    // Регулярное выражение проверяет число с точкой/запятой, у которого после разделителя ровно от 1 до 2 знаков (либо целое число)
     const trafficRegex = /^\d+([.,]\d{1,2})?$/;
 
     if (rawTraffic !== "" && !trafficRegex.test(rawTraffic)) {
@@ -200,7 +218,6 @@ app.post("/add", requireWebAdmin, async (req, res, next) => {
     const traffic =
       rawTraffic !== "" ? parseFloat(rawTraffic.replace(",", ".")) : 0;
 
-    // 1. Проверка обязательных полей (ID может содержать буквы и цифры)
     if (!trimmedServerId || isNaN(cpu) || isNaN(ram) || isNaN(disk)) {
       return res.status(400).render("add", {
         title: "Добавление метрики",
@@ -216,7 +233,6 @@ app.post("/add", requireWebAdmin, async (req, res, next) => {
       });
     }
 
-    // 2. Валидация процентов (от 0 до 100)
     if (
       cpu < 0 ||
       cpu > 100 ||
@@ -232,7 +248,6 @@ app.post("/add", requireWebAdmin, async (req, res, next) => {
       });
     }
 
-    // 3. Валидация диапазона трафика
     if (traffic < 0 || traffic > 10000000 || isNaN(traffic)) {
       return res.status(400).render("add", {
         title: "Добавление метрики",
@@ -278,7 +293,7 @@ app.get("/item/:id", async (req, res, next) => {
 
 app.post("/auth/register", async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -300,7 +315,7 @@ app.post("/auth/register", async (req, res, next) => {
     const newUser = await User.create({
       email,
       passwordHash,
-      role: role && ["user", "admin"].includes(role) ? role : "user",
+      role: "user",
     });
 
     res.status(201).json({
@@ -351,7 +366,6 @@ app.post("/auth/login", async (req, res, next) => {
     };
 
     const token = jwt.sign(
-      //Шифрует payload с помощью jwt.sign, используя секретный ключ process.env.JWT_SECRET, и задает срок жизни токена на 1 час
       payload,
       process.env.JWT_SECRET || "default_secret",
       {
@@ -437,10 +451,12 @@ app.get("/metrics/:id", authenticateToken, async (req, res, next) => {
   }
 });
 
+// ДОБАВЛЕНА ПРОВЕРКА ЛОГГЕРА ДЛЯ API-СОЗДАНИЯ МЕТРИКИ
 app.post(
   "/metrics",
   authenticateToken,
   requireAdmin,
+  blockIfLogsDown,
   async (req, res, next) => {
     try {
       const { serverId, cpuUsagePercent, ramUsagePercent, diskUsagePercent } =
@@ -549,7 +565,7 @@ app.delete(
 );
 
 app.get("/cause-error", (req, res, next) => {
-  next(new Error("Системная ошибка приложения")); //тестовое
+  next(new Error("Системная ошибка приложения"));
 });
 
 app.use(notFoundHandler);
