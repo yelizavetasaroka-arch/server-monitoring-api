@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class ServerMetric extends Model {
     /**
@@ -13,14 +11,17 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
-  ServerMetric.init({
-    serverId: DataTypes.STRING,
-    cpuUsagePercent: DataTypes.FLOAT,
-    ramUsagePercent: DataTypes.FLOAT,
-    diskUsagePercent: DataTypes.FLOAT
-  }, {
-    sequelize,
-    modelName: 'ServerMetric',
-  });
+  ServerMetric.init(
+    {
+      serverId: DataTypes.STRING,
+      cpuUsagePercent: DataTypes.FLOAT,
+      ramUsagePercent: DataTypes.FLOAT,
+      diskUsagePercent: DataTypes.FLOAT,
+    },
+    {
+      sequelize,
+      modelName: "ServerMetric",
+    },
+  );
   return ServerMetric;
 };

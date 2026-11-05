@@ -14,8 +14,23 @@ const { authenticateToken, requireAdmin } = require("./middleware/auth");
 const { requestLogger, isLogFileUnavailable } = require("./middleware/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/errors");
 
+const mongoose = require("mongoose");
+const MongoServerMetric = require("./models/MongoServerMetric");
+const mongoMetricsRouter = require("./routes/mongoMetrics");
+
 const app = express();
 const cors = require("cors");
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use("/api/mongo", mongoMetricsRouter);
+mongoose
+  .connect(
+    process.env.MONGO_URI || "mongodb://localhost:27017/server_monitoring",
+  )
+  .then(() => console.log(" Локальная MongoDB успешно подключена."))
+  .catch((err) => console.error(" Ошибка подключения к MongoDB:", err));
 
 app.use(
   cors({

@@ -2,20 +2,20 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title><%= title %></title>
+  <title><%= typeof title !== 'undefined' ? title : 'Сервер мониторинга' %></title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <nav>
     <div class="nav-left">
       <a href="/">Главная</a>
-      <% if (user && user.role === 'admin') { %>
+      <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
         <a href="/add">Добавить метрику</a>
       <% } %>
     </div>
 
     <div class="nav-right">
-      <% if (user && user.role !== 'guest') { %>
+      <% if (typeof user !== 'undefined' && user && user.role !== 'guest') { %>
     <span class="user-info"><%= user.name %></span>
     <a href="/logout" class="btn btn-danger btn-login">Выйти</a>
       <% } else { %>
@@ -25,5 +25,3 @@
   </nav>
 
   <main class="container">
-
-    
