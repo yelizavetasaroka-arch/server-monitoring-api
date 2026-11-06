@@ -10,7 +10,6 @@ const { ServerMetric, User } = require("./models");
 
 const { authenticateToken, requireAdmin } = require("./middleware/auth");
 
-// ИМПОРТИРУЕМ ГЕТТЕР ИЗ НОВОГО ЛОГГЕРА
 const { requestLogger, isLogFileUnavailable } = require("./middleware/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/errors");
 
@@ -563,6 +562,14 @@ app.delete(
     }
   },
 );
+//pz
+const serverRoutes = require("./routes/serverRoutes");
+const metricRoutes = require("./routes/metricRoutes");
+const incidentRoutes = require("./routes/incidentRoutes");
+
+app.use("/api/servers", serverRoutes);
+app.use("/api/metrics", metricRoutes);
+app.use("/api/incidents", incidentRoutes);
 
 app.get("/cause-error", (req, res, next) => {
   next(new Error("Системная ошибка приложения"));
