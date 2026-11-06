@@ -1,21 +1,33 @@
 require("dotenv").config();
+const http = require("http");
 const express = require("express");
+const { Server } = require("socket.io");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
+const cors = require("cors");
 
 const { ServerMetric, User } = require("./models");
-
 const { authenticateToken, requireAdmin } = require("./middleware/auth");
-
 const { requestLogger, isLogFileUnavailable } = require("./middleware/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/errors");
 
 const app = express();
-const cors = require("cors");
+const server = http.createServer(app);
+const PORT = process.env.PORT || 3000;
 
+// Настройка Socket.IO с CORS
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Базовые middleware (CORS в самом верху)
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -24,17 +36,24 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-const PORT = process.env.PORT || 3000;
-
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "public")));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(requestLogger);
 
+// ==========================================
+// ПОДКЛЮЧЕНИЕ МАРШРУТОВ (ПЗ) — ВВЕРХУ ДЛЯ ПРАВИЛЬНОЙ МАРШРУТИЗАЦИИ
+// ==========================================
+const serverRoutes = require("./routes/serverRoutes");
+const metricRoutes = require("./routes/metricRoutes");
+const incidentRoutes = require("./routes/incidentRoutes");
+
+app.use("/api/servers", serverRoutes);
+app.use("/api/metrics", metricRoutes);
+app.use("/api/incidents", incidentRoutes);
+
+// Middleware для ролей EJS-страниц
 app.use((req, res, next) => {
   let role = req.cookies.user_role;
   let email = req.cookies.user_email;
@@ -71,7 +90,6 @@ const blockIfLogsDown = (req, res, next) => {
     const message =
       "Добавление метрик временно заблокировано: критическая ошибка системы аудита.";
 
-    // Если это API (AJAX) или клиент ждёт JSON
     if (
       req.xhr ||
       req.path.startsWith("/api") ||
@@ -80,7 +98,6 @@ const blockIfLogsDown = (req, res, next) => {
       return res.status(503).json({ success: false, message });
     }
 
-    // Если обычная форма — рендерим страницу ошибки
     return res.status(503).render("500", {
       title: "Ошибка сервера",
       error: message,
@@ -173,12 +190,10 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-// ДОБАВЛЕНА ПРОВЕРКА ЛОГГЕРА ДЛЯ СТРАНИЦЫ ДОБАВЛЕНИЯ
 app.get("/add", requireWebAdmin, blockIfLogsDown, (req, res) => {
   res.render("add", { title: "Добавить метрику сервера" });
 });
 
-// ДОБАВЛЕНА ПРОВЕРКА ЛОГГЕРА ДЛЯ ПОСТ-ЗАПРОСА
 app.post("/add", requireWebAdmin, blockIfLogsDown, async (req, res, next) => {
   try {
     const {
@@ -287,7 +302,7 @@ app.get("/item/:id", async (req, res, next) => {
 });
 
 // ==========================================
-// REST API МАРШРУТЫ
+// REST API МАРШРУТЫ (Авторизация и Метрики)
 // ==========================================
 
 app.post("/auth/register", async (req, res, next) => {
@@ -450,7 +465,6 @@ app.get("/metrics/:id", authenticateToken, async (req, res, next) => {
   }
 });
 
-// ДОБАВЛЕНА ПРОВЕРКА ЛОГГЕРА ДЛЯ API-СОЗДАНИЯ МЕТРИКИ
 app.post(
   "/metrics",
   authenticateToken,
@@ -562,22 +576,27 @@ app.delete(
     }
   },
 );
-//pz
-const serverRoutes = require("./routes/serverRoutes");
-const metricRoutes = require("./routes/metricRoutes");
-const incidentRoutes = require("./routes/incidentRoutes");
-
-app.use("/api/servers", serverRoutes);
-app.use("/api/metrics", metricRoutes);
-app.use("/api/incidents", incidentRoutes);
 
 app.get("/cause-error", (req, res, next) => {
   next(new Error("Системная ошибка приложения"));
 });
 
+// Обработка подключений WebSocket
+io.on("connection", (socket) => {
+  console.log(`Пользователь подключен: ${socket.id}`);
+
+  socket.on("server-alert", (data) => {
+    io.emit("broadcast-alert", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Пользователь отключился");
+  });
+});
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Сервер мониторинга нагрузки запущен: http://localhost:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Сервер с WebSocket запущен: http://localhost:${PORT}`);
 });

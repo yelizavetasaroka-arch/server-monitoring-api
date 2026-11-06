@@ -57,12 +57,10 @@ exports.updateServer = async (req, res, next) => {
     const { name, ipAddress, status, os } = req.body;
 
     if (!name || !ipAddress || !status || !os) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Для PUT-запроса необходимы все поля",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Для PUT-запроса необходимы все поля",
+      });
     }
 
     const query = `
@@ -99,13 +97,11 @@ exports.deleteServer = async (req, res, next) => {
         .json({ success: false, message: "Сервер не найден" });
     }
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Успешно удалено",
-        data: result.rows[0],
-      });
+    res.status(200).json({
+      success: true,
+      message: "Успешно удалено",
+      data: result.rows[0],
+    });
   } catch (error) {
     next(error);
   }
